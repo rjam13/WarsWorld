@@ -38,7 +38,6 @@
     "singleQuote": true
   },
   "dependencies": {
-    "@pixi/react": "^7.0.3",
     "@prisma/client": "^4.12.0",
     "@tanstack/react-query": "^4.18.0",
     "@trpc/client": "^10.19.1",
@@ -48,7 +47,7 @@
     "clsx": "^1.1.1",
     "next": "^13.2.1",
     "next-auth": "^4.14.0",
-    "pixi.js": "^7.2.4",
+    "pixijs": "^7.1.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "sass": "^1.62.0",

@@ -1,6 +1,6 @@
 import { useRouter } from 'next/router';
 import { useEffect, useRef, useState } from 'react';
-import { MapTile } from 'server/map-parser';
+import { MapTile, PlayerState } from 'server/map-parser';
 import { trpc } from 'utils/trpc';
 import {
   Application,
@@ -56,18 +56,23 @@ export type Segment = {
 };
 
 export default function Pixi() {
+  const [players, setPlayers] = useState<PlayerState | null | undefined>(null);
   const [segments, setSegments] = useState<Segment[] | null | undefined>(null);
   const pixiCanvasRef = useRef<HTMLCanvasElement>(null);
 
   // the hash found in the url, this page does not have it
   // note: this is pulled from match/[matchId].tsx
-  const { query } = useRouter();
+  // const { query } = useRouter();
   // const matchId = query.matchId as string;
   const matchId = 'clgvbeh6n0001m0w1ntt8pl0k';
   trpc.match.full.useQuery(matchId, {
     onSuccess(data) {
       if (data === null) {
         throw new Error(`Match ${matchId} not found!`);
+      }
+
+      if (!players) {
+        setPlayers(data.matchState.playerState);
       }
 
       if (!segments) {
@@ -89,12 +94,21 @@ export default function Pixi() {
 
     BaseTexture.defaultOptions.scaleMode = SCALE_MODES.NEAREST;
 
+    const tileSize = 16;
+    const numberOfTilesInRow = 18;
+    const numberOfTilesInColumn = 18;
+
     const pixiApp = new Application({
       view: pixiCanvasRef.current,
+      autoDensity: true,
       resolution: 2,
+      // 2 = scale set to stage, 6 = the buildings overflowing out of the map above
+      width: (tileSize*numberOfTilesInRow) * 2,
+      height: (tileSize*numberOfTilesInColumn+6) * 2,
+      backgroundAlpha: 0,
     });
 
-    pixiApp.stage.position.set(200, 0);
+    pixiApp.stage.scale.set(2);
 
     (async () => {
       for (const indexString in segments) {
@@ -109,9 +123,10 @@ export default function Pixi() {
 
         // x and y coordinates are calculated using the index
         // there will soon x and y attributes in type segment
-        forestSprite.x = (index % 18) * 16;
+        forestSprite.x = (index % numberOfTilesInRow) * 16;
         forestSprite.y =
-          Math.floor(index / 18) * 16 - (forestSprite.height - 16);
+          Math.floor(index / numberOfTilesInColumn) * 16 - (forestSprite.height - 16)
+          + 6; // for overflowing buildings outside of the map
         pixiApp.stage.addChild(forestSprite);
       }
     })();
@@ -122,14 +137,12 @@ export default function Pixi() {
   }, [pixiCanvasRef, segments]);
 
   return (
-    <div className={styles.match + ' gameBox'}>
+    <div className={styles.match  + ' gameBox'}>
       <canvas
         style={{
           imageRendering: 'pixelated',
         }}
         ref={pixiCanvasRef}
-        width={800}
-        height={600}
       ></canvas>
     </div>
   );
